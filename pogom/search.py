@@ -113,7 +113,7 @@ def search_thread(args):
     queue = args
     while True:
         i, total_steps, step_location, step, lock = queue.get()
-        log.info("Search queue depth is: " + str(queue.qsize()))
+        log.debug("Search queue depth is: " + str(queue.qsize()))
         response_dict = {}
         failed_consecutive = 0
         while not response_dict:
@@ -132,6 +132,7 @@ def search_thread(args):
                         response_dict = {}
             else:
                 log.info('Map Download failed. Trying again.')
+                time.sleep(config['REQ_SLEEP'])
 
         time.sleep(config['REQ_SLEEP'])
 
@@ -171,6 +172,7 @@ def search(args, i):
             config['ORIGINAL_LATITUDE'] = config['NEXT_LOCATION']['lat']
             config['ORIGINAL_LONGITUDE'] = config['NEXT_LOCATION']['lon']
             config.pop('NEXT_LOCATION', None)
+            search_queue.queue.clear()
             search(args, i)
             return
 
@@ -185,12 +187,12 @@ def search_loop(args):
             search(args, i)
             log.info("Scanning complete.")
             if args.scan_delay > 1:
-                log.info('Waiting {:d} seconds before beginning new scan.'.format(args.scan_delay))
+                log.info('Waiting {:f} seconds before beginning new scan.'.format(args.scan_delay))
                 time.sleep(args.scan_delay)
             i += 1
 
     # This seems appropriate
     except Exception as e:
-        log.info('Crashed, waiting {:d} seconds before restarting search.'.format(args.scan_delay))
+        log.info('{0.__class__.__name__}: {0} - waiting {1} sec(s) before restarting'.format(e, args.scan_delay))
         time.sleep(args.scan_delay)
         search_loop(args)
